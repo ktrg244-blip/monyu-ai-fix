@@ -1,64 +1,43 @@
 const express = require("express");
+const fetch = require("node-fetch");
 
 const app = express();
-
-// CORSを許可
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(200);
-  }
-  next();
-});
-
 app.use(express.json());
+
+// ★ここに直接入れる（環境変数やめる）
+const OPENAI_API_KEY = "sk-proj-ここに貼る";
 
 app.post("/chat", async (req, res) => {
   try {
-    const { message } = req.body || {};
+    const { message } = req.body;
 
-    if (!process.env.OPENAI_API_KEY) {
-      return res.status(500).json({ reply: "APIキーが見つからない" });
-    }
-
-    const apiRes = await fetch("https://api.openai.com/v1/responses", {
+    const apiRes = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
+        "Authorization": `Bearer ${OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        model: "gpt-4.1-mini",
-        input: message
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: message }]
       })
     });
 
     const data = await apiRes.json();
 
-    if (!apiRes.ok) {
-      return res.status(500).json({
-        reply: "OpenAI error: " + JSON.stringify(data)
-      });
+    if (!data.choices) {
+      return res.status(500).json({ reply: "APIエラー" });
     }
 
     res.json({
-      reply: data.output_text || "OK"
+      reply: data.choices[0].message.content
     });
 
-  } catch (e) {
-    res.status(500).json({
-      reply: "Server error: " + String(e)
-    });
+  } catch (err) {
+    res.status(500).json({ reply: "サーバーエラー" });
   }
 });
 
-app.get("/", (req, res) => {
-  res.send("monyu-ai running");
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log("Server running on port " + PORT);
+app.listen(3000, () => {
+  console.log("monyu-ai running");
 });
