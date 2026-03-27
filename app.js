@@ -4,8 +4,7 @@ const fetch = require("node-fetch");
 const app = express();
 app.use(express.json());
 
-// ★ここに直接入れる（環境変数やめる）
-const OPENAI_API_KEY = "sk-proj-ここに貼る";
+const OPENAI_API_KEY = "sk-proj-ここに自分のキー";
 
 app.post("/chat", async (req, res) => {
   try {
@@ -25,19 +24,21 @@ app.post("/chat", async (req, res) => {
 
     const data = await apiRes.json();
 
-    if (!data.choices) {
-      return res.status(500).json({ reply: "APIエラー" });
-    }
-
     res.json({
-      reply: data.choices[0].message.content
+      reply: data.choices?.[0]?.message?.content || "返答なし"
     });
 
   } catch (err) {
-    res.status(500).json({ reply: "サーバーエラー" });
+    res.status(500).json({
+      reply: "サーバーエラー: " + String(err)
+    });
   }
 });
 
+app.get("/", (req, res) => {
+  res.send("monyu-ai running");
+});
+
 app.listen(3000, () => {
-  console.log("monyu-ai running");
+  console.log("Server running");
 });
