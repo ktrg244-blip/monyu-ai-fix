@@ -1,11 +1,27 @@
 const express = require("express");
 
 const app = express();
+
+// CORSを許可
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 app.use(express.json());
 
 app.post("/chat", async (req, res) => {
   try {
-    const { message } = req.body;
+    const { message } = req.body || {};
+
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({ reply: "APIキーが見つからない" });
+    }
 
     const apiRes = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
@@ -22,8 +38,7 @@ app.post("/chat", async (req, res) => {
     const data = await apiRes.json();
 
     if (!apiRes.ok) {
-      console.error("OpenAI error:", JSON.stringify(data));
-      return res.json({
+      return res.status(500).json({
         reply: "OpenAI error: " + JSON.stringify(data)
       });
     }
@@ -33,8 +48,7 @@ app.post("/chat", async (req, res) => {
     });
 
   } catch (e) {
-    console.error("Server error:", e);
-    res.json({
+    res.status(500).json({
       reply: "Server error: " + String(e)
     });
   }
