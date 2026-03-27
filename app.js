@@ -21,12 +21,22 @@ app.post("/chat", async (req, res) => {
 
     const data = await apiRes.json();
 
+    if (!apiRes.ok) {
+      console.error("OpenAI error:", JSON.stringify(data));
+      return res.json({
+        reply: "OpenAI error: " + JSON.stringify(data)
+      });
+    }
+
     res.json({
       reply: data.output_text || "OK"
     });
 
   } catch (e) {
-    res.json({ reply: "error" });
+    console.error("Server error:", e);
+    res.json({
+      reply: "Server error: " + String(e)
+    });
   }
 });
 
@@ -35,4 +45,6 @@ app.get("/", (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT);
+app.listen(PORT, () => {
+  console.log("Server running on port " + PORT);
+});
